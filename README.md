@@ -1,13 +1,16 @@
 
-### Repositories
-- [Docker Hub repository](https://hub.docker.com/r/kalaksi/tftpd/)
-- [GitHub repository](https://github.com/kalaksi/docker-tftpd)
+# What is this container for?
 
-### What is this container for?
-This container runs a TFTP server with a prepopulated ```/tftpboot``` directory with necessary files and configuration for PXE booting.  
-Also compatible with U-Boot and Raspberry Pi 4.
+This container runs a TFTP server with a volume mapped `/tftp` directory. Optionally, also with a volume mapped `tftpboot` directory with necessary files
+and configuration for PXE booting. PXE variant also compatible with U-Boot and Raspberry Pi 4.
 
-### Why use this container?
+## Repositories
+
+- [Docker Hub repository](https://hub.docker.com/r/jessenich91/alpine-tftpd-pxe/)
+- [GitHub repository](https://github.com/jessench/docker-tftpd-pxe/)
+
+## Why use this container?
+
 **Simply put, this container has been written with simplicity and security in mind.**
 
 Many community containers run unnecessarily with root privileges by default and don't provide help for dropping unneeded CAPabilities either.
@@ -17,30 +20,35 @@ To remedy the situation, these images have been written with security, simplicit
 
 |Requirement              |Status|Details|
 |-------------------------|:----:|-------|
-|Don't run as root        |❌    | Couldn't get tftpd to work without root (should figure out why). It drops the privileges, though.|
+|Don't run as root        |✅    | |
 |Official base image      |✅    | |
-|Drop extra CAPabilities  |✅    | See ```docker-compose.yml``` |
+|Drop extra CAPabilities  |✅    | See `docker-compose.yml` |
 |No default passwords     |✅    | No static default passwords. That would make the container insecure by default. |
 |Support secrets-files    |✅    | Support providing e.g. passwords via files instead of environment variables. |
 |Handle signals properly  |✅    | |
 |Simple Dockerfile        |✅    | No overextending the container's responsibilities. And keep everything in the Dockerfile if reasonable. |
 |Versioned tags           |✅    | Offer versioned tags for stability.|
 
-### Running this container
-See the example ```docker-compose.yml``` in the source repository.
+## Running this container
 
-#### Supported tags
-See the ```Tags``` tab on Docker Hub for specifics. Basically you have:
-- The default ```latest``` tag that always has the latest changes.
-- Minor versioned tags (follow Semantic Versioning), e.g. ```1.1``` which would follow branch ```1.1.x``` on GitHub.
+See the example `docker-compose.yml` in the source repository.
 
-#### Configuration
+### Supported tags
 
-The user should populate ```/tftpboot/boot``` with bootable images and usually replace the ```/tftpboot/pxelinux.cfg``` directory with one having the appropriate configuration.  
-See ```docker-compose.yml``` in the source repository for an example.  
+See the `Tags` tab on Docker Hub for specifics. Basically you have:
 
-Here's an overview of the directory structure with an example boot image for LibreELEC and another for RaspBian (Raspberry Pi).
-```
+- The default `latest` tag that always has the latest changes.
+- Versioned tags (follow Semantic Versioning), e.g. `1.1` which would follow release `v1.1` on GitHub.
+- Separate versioned tag for PXE enabled image that follows inline with base image, e.g. `pxe-latest` is a pxe-enabled subset of `latest`. Each release will correspond to a PXE versioned tag, e.g. `pxe-1.1` follows release `v1.1`
+
+### PXE Configuration
+
+The user should populate `/tftpboot/boot` with bootable images and usually replace the `/tftpboot/pxelinux.cfg` directory with one having the appropriate configuration.  
+See `docker-compose.yml` in the source repository for an example.  
+
+Here's an overview of the directory structure with an example boot image for LibreELEC and another for Raspbian (Raspberry Pi).
+
+```text
 /tftpboot
  ├── pxelinux.cfg           <- Configuration directory (for pxelinux). Mount your own directory over this to customize.
  │   └── default            <- Example configuration that only contains the "Boot from local disk" option.
@@ -63,8 +71,9 @@ Here's an overview of the directory structure with an example boot image for Lib
  
 ```
   
-And this could be the contents for custom ```pxelinux.cfg/default```:
-```
+Example contents for custom `pxelinux.cfg/default`:
+
+```text
 DEFAULT menu.c32
 PROMPT 0
 TIMEOUT 100
@@ -81,12 +90,9 @@ LABEL local
     LOCALBOOT 0
 ```
 
-#### Contributing
-See the repository on <https://github.com/kalaksi/docker-tftpd>.
-All kinds of contributions are welcome!
-
 ### License
-Copyright (c) 2018 kalaksi@users.noreply.github.com. See [LICENSE](https://github.com/kalaksi/docker-airsonic/blob/master/LICENSE) for license information.  
+
+Copyright (c) 2021 kalaksi@users.noreply.github.com. See [LICENSE](https://github.com/jessenich/docker-tftpd-pxe/blob/master/LICENSE) for license information.  
 
 As with all Docker images, the built image likely also contains other software which may be under other licenses (such as software from the base distribution, along with any direct or indirect dependencies of the primary software being contained).  
   

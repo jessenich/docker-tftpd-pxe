@@ -54,5 +54,7 @@ volumes:
   tftpd_boot: {
     
   }
-  tftpd_configuration: {}
+  tftpd_configuration: {
+    
+  }
 

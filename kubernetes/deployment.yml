@@ -33,7 +33,6 @@ spec:
               drop:
                 - ALL
           volumeMounts:
-            - mountPath: /tftpboot/boot
               name: tftpd-boot
             - mountPath: /tftpboot/pxelinux.cfg
               name: tftpd-configuration
