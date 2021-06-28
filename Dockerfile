@@ -1,21 +1,23 @@
 # Copyright (c) 2021 Jesse N. <jesse@keplerdev.com>
 # This work is licensed under the terms of the MIT license. For a copy, see <https://opensource.org/licenses/MIT>.
 
-ARG BASE_IMAGE_VARIANT="${BASE_IMAGE_VARIANT:-latest}"
-ARG INCLUDE_DOCS="${INCLUDE_DOCS:-true}"
+ARG BASE_IMAGE="jessenich91/alpine-sshd"
+ARG BASE_IMAGE_VARIANT="${latest}"
+
 
 FROM jesssenich91/alpine-sshd:"${BASE_IMAGE_VARIANT}" as tftpd
-
-ENV TFTPD_EXTRA_ARGS=
+ARG NO_DOCS="false"
+ARG NO_GLIBC="false"
 
 RUN apk update && \
     apk add tftp-hpa && \
     mkdir -p -m 0755 /tftp
 
-RUN if [ "${INCLUDE_DOCS}" == "true" ]; then apk add tftp-hpa-doc; fi
+RUN if [ "${NO_DOCS}" == "false" ]; then apk add tftp-hpa-doc; fi
 
 RUN rm -rf /var/cache/apk/*
 
+EXPOSe 53/tcp
 EXPOSE 1069/udp
 VOLUME /tftp
 
@@ -33,7 +35,7 @@ RUN apk update && \
     ln -s ../pxelinux.cfg /tftpboot/syslinux/efi64/pxelinux.cfg && \
     apk del syslinux_with_deps
 
-RUN if [ "${INCLUDE_DOCS}" == "true" ]; then apk add syslinux-doc; fi
+RUN if [ "${NO_DOCS}" == "$false" ]; then apk add syslinux-doc; fi
 
 COPY pxelinux.cfg /tftpboot/pxelinux.cfg
 VOLUME /tftpboot/boot
