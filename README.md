@@ -92,7 +92,7 @@ LABEL local
 
 ### License
 
-Copyright (c) 2021 kalaksi@users.noreply.github.com. See [LICENSE](https://github.com/jessenich/docker-tftpd-pxe/blob/master/LICENSE) for license information.  
+Copyright (c) 2021 Jesse N, jesse@keplerdev.com. See [LICENSE](https://github.com/jessenich/docker-tftpd-pxe/blob/master/LICENSE) for license information.  
 
 As with all Docker images, the built image likely also contains other software which may be under other licenses (such as software from the base distribution, along with any direct or indirect dependencies of the primary software being contained).  
   
