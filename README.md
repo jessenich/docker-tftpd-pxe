@@ -1,3 +1,4 @@
+![Release Status](https://github.com/jessenich/docker-alpine-tftpd-pxe/actions/workflows/docker-build-release.yml/badge.svg)
 
 # What is this container for?
 
