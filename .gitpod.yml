@@ -1,0 +1,8 @@
+image:
+  file: .gitpod.Dockerfile
+
+github:
+  prebuilds:
+    addComment: true
+    addBadge: true
+    addLabel: prebuilt-in-gitpod
