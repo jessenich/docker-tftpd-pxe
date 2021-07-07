@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  tftpd:
+    container_name: "tft-pxe-boot-server"
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      network:
+        build_net:
+          ipv4_address: 172.16.173.1
+      labels:
+        - maintainer: jessenich
+        - com.keplerdev.maintainer: Jesse N.
+        - com.keplerdev.description: "Lightweight Alpine based TFTP server with PxE Boot Support."
+    image: kalaksi/tftpd
+    restart: unless-stopped
+    environment:
+      # Search the man page for --blocksize to learn more
+      TFTPD_EXTRA_ARGS: '--blocksize 1468'
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - SYS_CHROOT
+    ports:
+      - 69:1069/udp
+    volumes:
+      - tftpd_boot:/tftpboot/boot
+      - tftpd_configuration:/tftpboot/pxelinux.cfg:ro
+    networks:
+      boot_net:
+        ipv4_address: 172.16.176.1
+
+networks:
+  build_net:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.172.0/22
+          gateway: 172.16.175.254
+  boot_net:
+    driver: bridge
+    enabe_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.176.0/25
+          gateway: 172.16.176.127
+
+volumes:
+  tftpd_boot: {
+    
+  }
+  tftpd_configuration: {
+    
+  }
+
