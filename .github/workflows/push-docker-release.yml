@@ -1,9 +1,10 @@
 name: "Push Docker Image"
 
 on:
-  release:
-    types: [published]
-    
+  push:
+    tags:
+      - "v*"
+
 env:
   TARGET_PLATFORMS: "linux/amd64,linux/arm64/v8,linux/arm/v7"
   ALPINE_VERSION: latest
@@ -11,8 +12,8 @@ env:
   PUSH_TO_DHCR: true
   PUSH_TO_GHCR: true
   PUSH_TO_ACR: false
-  
-    
+
+
 jobs:
   build-docker-image:
     runs-on: ubuntu-latest
@@ -24,7 +25,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-    
+
       - name: Get Version
         id: semver
         uses: LykkeBusiness/get-semver-from-tag-action@v1.0.2
@@ -42,7 +43,7 @@ jobs:
       - name: Buildx Builder Create
         run: |
           docker buildx create --platform "${{ env.TARGET_PLATFORMS }}
-        
+
       - name: Cache Docker layers
         uses: actions/cache@v2
         with:
@@ -50,7 +51,7 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-      
+
       - name: Login to Dockerhub
         if: ${{ env.PUSH_TO_DHCR }} != "false"
         uses: docker/login-action@v1
@@ -65,7 +66,7 @@ jobs:
           registry: ${{ env.GHCR_URL }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Login to Azure Container Registry
         if: ${{ env.PUSH_TO_AZCR }} != "false"
         uses: docker/login-action@v1
@@ -84,12 +85,10 @@ jobs:
             "com.keplerdev.maintainer: Jesse N. <jesse@keplerdev.com>"
             "com.keplerdev.image.sha": ${{ github.sha }}
             "com.keplerdev.repository.github.url: https://github.com/${{ github.repository }}"
-            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
+            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/r/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
+          target: tftpd
           build-args: |
-            BASE_IMAGE="jessenich91/alpine-sshd"
-            BASE_IMAGE_VARIANT="latest"
-            NO_DOCS="false"
-            NO_GLIBC="false"
+            VARIANT="latest"
           platforms: ${{ env.TARGET_PLATFORMS }}
           pull: true
           push: true
@@ -107,12 +106,10 @@ jobs:
             "com.keplerdev.maintainer: Jesse N. <jesse@keplerdev.com>"
             "com.keplerdev.image.sha": ${{ github.sha }}
             "com.keplerdev.repository.github.url: https://github.com/${{ github.repository }}"
-            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
+            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/r/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
           build-args: |
-            BASE_IMAGE="jessenich91/alpine-sshd"
-            BASE_IMAGE_VARIANT="latest"
-            NO_DOCS="false"
-            NO_GLIBC="false"
+            VARIANT="latest"
+          target: tftpd-pxe
           platforms: ${{ env.TARGET_PLATFORMS }}
           pull: true
           push: true
@@ -121,78 +118,3 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.semver.outputs.non-prefixed }}
             ${{ env.GHCR_URL }}/${{ github.repository}}:latest
             ${{ env.GHCR_URL }}/${{ github.repository}}:${{ steps.semver.outputs.non-prefixed }}
-
-      - name: Build & Push Dev Latest
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          labels: |
-            "maintainer: Jesse N. <jesse@keplerdev.com>"
-            "com.keplerdev.maintainer: Jesse N. <jesse@keplerdev.com>"
-            "com.keplerdev.image.sha": ${{ github.sha }}
-            "com.keplerdev.repository.github.url: https://github.com/${{ github.repository }}"
-            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
-          build-args: |
-            BASE_IMAGE="jessenich91/alpine-sshd"
-            BASE_IMAGE_VARIANT="latest"
-            NO_DOCS="false"
-            NO_GLIBC="true"
-          platforms: ${{ env.TARGET_PLATFORMS }}
-          pull: true
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest-no-glibc
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.semver.outputs.non-prefixed }}-no-glibc
-            ${{ env.GHCR_URL }}/${{ github.repository}}:latest-no-glibc
-            ${{ env.GHCR_URL }}/${{ github.repository}}:${{ steps.semver.outputs.non-prefixed }}-no-glibc
-      
-      - name: Build & Push Dev Latest
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          labels: |
-            "maintainer: Jesse N. <jesse@keplerdev.com>"
-            "com.keplerdev.maintainer: Jesse N. <jesse@keplerdev.com>"
-            "com.keplerdev.image.sha": ${{ github.sha }}
-            "com.keplerdev.repository.github.url: https://github.com/${{ github.repository }}"
-            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
-          build-args: |
-            BASE_IMAGE="jessenich91/alpine-sshd"
-            BASE_IMAGE_VARIANT="latest"
-            NO_DOCS="true"
-            NO_GLIBC="true"
-          platforms: ${{ env.TARGET_PLATFORMS }}
-          pull: true
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest-slim
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.semver.outputs.non-prefixed }}-slim
-            ${{ env.GHCR_URL }}/${{ github.repository}}:latest-slim
-            ${{ env.GHCR_URL }}/${{ github.repository}}:${{ steps.semver.outputs.non-prefixed }}-slim
-            
-      - name: Build & Push Dev Latest
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          labels: |
-            "maintainer: Jesse N. <jesse@keplerdev.com>"
-            "com.keplerdev.maintainer: Jesse N. <jesse@keplerdev.com>"
-            "com.keplerdev.image.sha": ${{ github.sha }}
-            "com.keplerdev.repository.github.url: https://github.com/${{ github.repository }}"
-            "com.keplerdev.registry.dockerhub.url: https://dockerhub.com/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}"
-          build-args: |
-            BASE_IMAGE="jessenich91/alpine-sshd"
-            BASE_IMAGE_VARIANT="latest"
-            NO_DOCS="true"
-            NO_GLIBC="false"
-          platforms: ${{ env.TARGET_PLATFORMS }}
-          pull: true
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest-no-docs
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.semver.outputs.non-prefixed }}-no-docs
-            ${{ env.GHCR_URL }}/${{ github.repository}}:latest-no-docs
-            ${{ env.GHCR_URL }}/${{ github.repository}}:${{ steps.semver.outputs.non-prefixed }}-no-docs
