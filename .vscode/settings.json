@@ -9,5 +9,6 @@
         "keplerdev",
         "nodocs",
         "tftpd"
-    ]
+    ],
+    "cmake.configureOnOpen": false
 }
