@@ -31,7 +31,7 @@ RUN apk update && \
     apk del syslinux_with_deps && \
     rm -rf /var/cache/apk/*;
 
-COPY ./lxfs /
+COPY ./rootfs /
 VOLUME /tftpboot/boot
 
 COPY ./entrypoint.sh /entrypoint.sh
