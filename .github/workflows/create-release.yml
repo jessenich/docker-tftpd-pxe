@@ -2,10 +2,11 @@ name: Create Release
 
 
 on:
-  workflow_dispatch:
-  # push:
-  #   tags:
-  #     - v*
+  push:
+    branches:
+      - master
+      - main
+      - release/*
 
 permissions:
   actions: read
@@ -13,16 +14,170 @@ permissions:
   packages: write
   deployments: write
 
+env:
+  SEMVER_MESSAGE_SEARCH: '\[?v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?\]?'
+  SEMVER_REGEX: '(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+
 jobs:
-  create-release:
+  bump-semver:
     name: Create Release
     runs-on: ubuntu-latest
-
     steps:
-      - name: GitHub Create Tag Release
-        uses: Roang-zero1/github-create-release-action@v2.1.0
-        with:
-          version_regex: ^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+
-          prerelease_regex: ^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\-preview[[:digit:]]
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get Commit Message
+        id: commit-msg
+        run: |
+          echo "::set-output name=commit-message::$COMMIT_MSG"
+          exit 0;
+
+      - name: Search Message
+        id: msg-search
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          msg: ${{ steps.commit-msg.outputs.commit-message }}
+        run: |
+          MSG="${{ env.msg }}";
+          SEMVER="$(echo $MSG | grep -oE '${{ env.SEMVER_MESSAGE_SEARCH }}')"
+          echo "::set-output name=semver::$SEMVER";
+
+      - name: Get Last Tag
+        id: last-tag
+        run: |
+          LATEST_TAG="$(git tag | tail -n 1 | tr -d ' ')"
+          if [ -z "$LATEST_TAG" ]; then
+              echo "No tags found, starting at 0.1.0" >&2
+              LATEST_TAG="0.1.0";
+          fi
+
+          echo "::set-output name=latest-tag::$LATEST_TAG"
+          exit 0;
+
+      - name: Deconstruct Semver Tag
+        id: semver-deconstruct
+        env:
+          tag-name: ${{ steps.last-tag.outputs.tag }};
+        shell: pwsh
+        run: |
+          using namespace System.Linq;
+          using namespace System.Text.RegularExpressions;
+
+          $pattern = '"${{ env.SEMVER_REGEX }}"';
+          $tag = '"${{ env.tag-name }}"';
+
+          if ($tag.Contains("refs/tags/")) {
+            $tag = $tags.Replace("refs/tags/", [string]::Empty);
+          }
+
+          $semver = $semver | Select-String -Pattern $pattern -AllMatches -List -Quiet;
+
+          $prefix = $tag.Replace($semver, [string]::Empty);
+
+          $matchingGroups = $semver.Matches.Groups
+
+          if ($null -eq $matchingGroups -or $matchingGroups.Count -eq 0) {
+              throw "No SemVer 2.0 compliant string found within most recent tag."
+              exit(1);
+          }
+
+          $semver = $matchingGroups[0].Value;
+          $major = $matchingGroups[1].Value;
+          $majroIsZeroesque = [Convert]::ToInt32($major) -eq 0;
+          $minor = ""
+          if ($matchingGroups.Count -ge 3) {
+              $minor = $matchingGroups[2].Value;
+          }
+
+          if (([string]::IsNullOrWhiteSpace($minor) -or [Convert]::ToInt32($minor) -eq 0) -and $majorIsZeroesque) {
+              $minor = "1";
+          }
+
+          $patch = "0";
+          if ($matchingGroups.Count -ge 4) {
+              $patch = $matchingGroups[3].Value;
+          }
+
+          $label = [string]::Empty;
+          if ($matchingGroups.Count -eq 5) {
+              $label = $matchingGroups[4].Value.TrimStart("-");
+          }
+
+          Write-Output "::set-output name=extract-source::'LatestTag'"
+          Write-Output "::set-output name=semver::$($semver)""';
+          Write-Output "::set-output name=prefix::$($prefix)";
+          Write-Output "::set-output name=major::$($major)";
+          Write-Output "::set-output name=minor::$($minor)";
+          Write-Output "::set-output name=patch::$($patch)";
+          Write-Output "::set-output name=label::$($label)";
+          exit 0;
+
+
+
+      - name: Rudimentary Detect Prerelease REvision
+        id: prerelease
+        shell: pwsh
+        env:
+          last-tag-label: ${{ steps.semver-deconstruct.outputs.label }}
+        run: |
+          $label = "${{ env.last-tag-label }}"
+          $prereleaseRegex = '^(alpha|beta|rc|preview|prerelease|pr|rail|track|testflight)([\.\-_\+=]?)([0-9]*)$'
+          $matches = $label | Select-String -Pattern $prereleaseRegex | Select-Object -ExpandProperty Matches;
+          if ($null -eq $matches.Groups -or $matches.Groups.Count -eq 0) {
+              Write-Output "No prerelease label found.";
+              Write-Output "::set-output name=label::$($label)"
+              Write-Output "::set-output name=label-name::";
+              Write-Output "::set-output name=delimiter::";
+              Write-Output "::set-output name=label-revision::"
+          }
+          else {
+              Write-Output "::set-output name=label::$($label)"
+              Write-Output "::set-output name=label-name::";
+              Write-Output "::set-output name=delimiter::";
+              Write-Output "::set-output name=label-revision::"
+          }
+          exit 0;
+
+      - name: Bump SemVer
+        id: bump
+        shell: pwsh
+        env:
+          segment: patch
+          prerelease-priority: "true"
+          prefix: ${{ steps.semver-deconstruct.outputs.prefix }}
+          major: ${{ steps.semver-deconstruct.outputs.major }}
+          minor: ${{ steps.semver-deconstruct.outputs.minor }}
+          patch: ${{ steps.semver-deconstruct.outputs.patch }}
+          label: ${{ steps.semver-deconstruct.outputs.label }}
+          pr-label-name: ${{ steps.prerelease.outputs.label-name }}
+          pr-label-delimiter: ${{ steps.prerelease.outputs.delimiter }}
+          pr-label-revision: ${{ steps.prerelease.outputs.label-revision }}
+        run: |
+          $prerelease = "${{ env.prerelease-priority }}";
+          $labelName = "${{ env.pr-label-name }}";
+
+          if ($prerelease -and (-not ([string]::IsNullOrWhiteSpace($labelName)))) {
+              $prRevString = "${{ env.pr-label-revision }}";
+              $prRevInt = [Convert]::ToInt32($prRevString);
+              $prRevInt++;
+              $prRevString = $prRevInt.ToString();
+              Write-Output "::set-output name=tag::$($prefix)$($major).$($minor).$($patch)-$($labelName)${{ env.pr-label-delimiter }}$($prRevString)""
+          }
+          else {
+              $patchString = "${{ env.patch }}";
+              $patchInt = [Convert]::ToInt32($patch);
+              $patchInt++;
+              $patchString = $patchInt.ToString();
+              Write-Output "::set-output name=tag::$($prefix)$($major).$($minor).$($patchString)
+          }
+
+      - name: Push Tag to Repository
+        run: |
+          git config --global user.name 'Jesse N.'
+          git config --global user.email 'jesse@keplerdev.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git tag ${{ steps.bump.outputs.tag }}
+          git push --tags
+
+
+
+

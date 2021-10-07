@@ -28,10 +28,10 @@ builder_image="moby/buildkit:latest"
 platforms="linux/amd64,linux/arm64/v8,linux/arm/v7"
 
 # OCI Labels
-oci_created="$(date "+%Y-%m-%d")";
-oci_authors="Jesse N. <jesse@keplerdev.com>";
-oci_url="https://dockerhub.com/r/jessenich91/tftpd-pxe";
-oci_documentation="https://github.com/jessenich/docker-tftpd-pxe/README.md";
+oci_created= ;
+oci_authors= ;
+oci_url= ;
+oci_documentation= ;
 oci_source="https://github.com/jessenich/docker-tftpd-pxe";
 oci_version= ;
 oci_revision= ;
@@ -47,7 +47,7 @@ latest=true
 
 # Image Build Arguments
 alpine_version="3.14";
-username="sysadm";
+target="tftp-pxe"
 
 post_passthru=false;
 
@@ -83,10 +83,10 @@ __docker_build_derive_oci() {
     # org.opencontainers.image.url - URL to find more information on the image (string).
     # org.opencontainers.image.documentation - URL to get documentation on the image (string).
     # org.opencontainers.image.source - URL to get source code for building the image (string).
-    # org.opencontainers.image.version - Version of the packaged software.
-
+    
     # The version MAY match a label or tag in the source code repository.
     # Version MAY be Semantic versioning-compatible.
+    # org.opencontainers.image.version - Version of the packaged software.
     # org.opencontainers.image.revision - Source control revision identifier for the packaged software.
     # org.opencontainers.image.vendor - Name of the distributing entity, organization or individual.
     # org.opencontainers.image.licenses - License(s) under which contained software is distributed as an SPDX License Expression.
@@ -94,12 +94,26 @@ __docker_build_derive_oci() {
     # org.opencontainers.image.title - Human-readable title of the image (string).
     # org.opencontainers.image.description - Human-readable description of the software packaged in the image (string).
 
-    if [ -z "$oci_version" ]; then oci_version="org.opencontainers.image.version=${image_version}"; fi
-    if [ -z "$oci_source" ]; then oci_source="$(git remote get-url --push origin 2>/dev/null)"; fi
+    local repo_url= ;
+    local run_date= ;
+    local author="Jesse N. <jesse@keplerdev.com>"
+    repo_url="$(git remote get-url --push origin)"
+    run_date=$(date "+%Y-%m-%d")
+    
+    oci=(
+        "${oci_created:-"org.opencontainers.image.created=$run_date"}"
+        "${oci_authors:-"org.opencontainers.image.authors=$author"}"
+        "${oci_url:-"org.opencontainers.image.url=$repo_url"}"
+        "${oci_documentation:-"org.opencontainers.image.documentation=$repo_url/README.md"}"
+        "${oci_source:-"org.opencontainers.image.source=$repo_url"}"
+        "${oci_version:-"org.opencontainers.image.version=$image_version"}"
+        "${oci_revision:-"org.opencontainers.image.revision=$image_version"}"
+        "${oci_vendor:-"org.opencontainers.image.vendor=$author"}"
+        "${oci_licenses:-"org.opencontainers.image.licenses=MIT"}"
+    )
 
-    local oci_version="org.opencontainers.image.version=${image_version}"
-    local oci_source= ;
-    oci_source="org.opencontainers.image.source=$(git remote get-url --push origin)"
+    echo "${oci[@]}"
+    exit 0;
 }
 
 __docker_build_login() {
@@ -122,7 +136,7 @@ __docker_build_login() {
         show_usage
         exit 1;
     # Password is defaulted to the 3rd ordinal parameter - check if this was actually a switch for stdin input
-    elif [[ "${__password}" = *"password-stdin"* ]]; then
+    elif [[ "${__password}" = *"password-std-in"* ]]; then
         unset __password;
         __password_stdin=true;
     fi
@@ -196,8 +210,8 @@ __docker_build_build() {
             -t "${ghcr_registry}/${ghcr_library}/${ghcr_repository}:${tag2}" \
             -t "${dockerhub_library}/${dockerhub_repository}:latest" \
             -t "${ghcr_registry}/${ghcr_library}/${ghcr_repository}:latest" \
-            --build-arg "ALPINE_VERSION=${alpine_version}" \
-            --build-arg "USER=${username}" \
+            --build-arg "VARIANT=${alpine_version}" \
+            --target "$target_phase" \
             --platform "${platforms}" \
             --push \
             "${repository_root}"
@@ -208,8 +222,8 @@ __docker_build_build() {
             -t "${ghcr_registry}/${ghcr_library}/${ghcr_repository}:${tag1}" \
             -t "${dockerhub_library}/${dockerhub_repository}:${tag2}" \
             -t "${ghcr_registry}/${ghcr_library}/${ghcr_repository}:${tag2}" \
-            --build-arg "ALPINE_VERSION=${alpine_version}" \
-            --build-arg "USER=${username}" \
+            --build-arg "VARIANT=${alpine_version}" \
+            --target "$target_phase" \
             --platform "${platforms}" \
             --push \
             "${repository_root}"
@@ -221,45 +235,45 @@ __docker_build_show_usage() {
 Usage: $0 [Script Options] [Builder Options] [[DockerHub Login Options] &|[GitHub Login Options]] [Namespace Args] [Build Args] ImageVersion -- [Passthru Build Switches]
 
     Script Parameters
-        -h | --help                          - Show this help screen.
-        -v | --verbose                       - Print verbose information to stdout.
-        -f | --version-format                 - Method in which script detects the version to use. Valid options include
-                                                 "default": Use latest git tag if image version not already specified. This is the default value.
-                                                 "git-tag": Ignore specified image version argument and use latest git tag
-                                                 "explicit": Use only the value passed with -i | --image-version. Errors if no value is supplied.
-
-    Builder Options
-        -b | --builder-image                 - Name, and tag if not latest, to use with BuildKit
-        -P | --platforms                     - Platform string to pass to buildkit. Defaults to 'linux/amd64,linux/arm64/v8,linux/arm/v7'
-
-    DockerHub Login Options
-        -dL | --dockerhub-login-endpoint     - Defaults to null, or docker.io. Only specify in special circumstances.
-        -du | --dockerhub-username           - Username to login to the DockerHub Container Registry. This is not part of the image namespace even though both values may be the same.
-        -dp | --dockerhub-password           - Password to login to the GitHub Container Registry. This can be a password or PAT, though a PAT is recommended.
-        --dockerhub-password-stdin           - Read DockerHub registry password from stdin stream. This can be a password or PAT, though a PAT is recommended.
-
-    GitHub Login Options
-        -gL | --ghcr-login-endpoint          - Relative endpoint URI to post login credentials to. This is only required for GitHub Enterprise registries.
-        -gu | --ghcr-username                - Username to login to the GitHub Container Registry.
-        -gp | --ghcr-password                - Password to login to the GitHub Container Registry. This can be a password or PAT, though a PAT is recommended.
-        --ghcr-password-stdin                - Read GitHub Container Registry password from stdin stream. This can be a password or PAT, though a PAT is recommended.
-
-    Namespacing Args
-        -dl | --dockerhub-library            - The library segment of the DockerHub images namespace.
-        -dr | --dockerhub-repository         - The repository segment of the DockerHub images namespace.
-        -gl | --ghcr-library                 - The library segment of the GitHub images namespace.
-        -gr | --ghcr-repository              - The repository segment of the GitHub images namespace.
-
-    OpenContainer Args
-        -oci | --oci | --oci-label        - Label(s) as described by the OCI in the format of "key=value". Note: Version is automatically added based on the image-version argument.
-                                               If a remote origin can be found and is not explicitly specified, it will be added.
-                                                 --opencontainers-label "created=01/01/2021"
-                                                 --opencontainers-label "source=https://github.com/user/repository"
-
-    Build Args
-        -a | --alpine-version                - Semantic version compliant string that coincides with underlying base Alpine image. See dockerhub.com/alpine for values. 'latest' is considered valid.
-        -u | --username                      - Username to use for non-root default user.
-        --latest                             - Include additional "latest" tag
+        -h | --help                               - Show this help screen.
+        -v | --verbose                            - Print verbose information to stdout.
+        -f | --version-format                     - Method in which script detects the version to use. Valid options include
+                                                       "default": Use latest git tag if image version not already specified. This is the default value.
+                                                       "git-tag": Ignore specified image version argument and use latest git tag
+                                                       "explicit": Use only the value passed with -i | --image-version. Errors if no value is supplied.
+     
+    Builder Options     
+        -b | --builder-image [ IMAGE ]            - Name, and tag if not latest, to use with BuildKit
+        -P | --platforms [ PLATFORM STRING ]      - Platform string to pass to buildkit. Defaults to 'linux/amd64,linux/arm64/v8,linux/arm/v7'
+     
+    DockerHub Login Options     
+        -dL | --dockerhub-login-endpoint          - Defaults to null, or docker.io. Only specify in special circumstances.
+        -du | --dockerhub-username                - Username to login to the DockerHub Container Registry. This is not part of the image namespace even though both values may be the same.
+        -dp | --dockerhub-password                - Password to login to the GitHub Container Registry. This can be a password or PAT, though a PAT is recommended.
+        --dockerhub-password-stdin                - Read DockerHub registry password from stdin stream. This can be a password or PAT, though a PAT is recommended.
+     
+    GitHub Login Options     
+        -gL | --ghcr-login-endpoint               - Relative endpoint URI to post login credentials to. This is only required for GitHub Enterprise registries.
+        -gu | --ghcr-username                     - Username to login to the GitHub Container Registry.
+        -gp | --ghcr-password                     - Password to login to the GitHub Container Registry. This can be a password or PAT, though a PAT is recommended.
+        --ghcr-password-stdin                     - Read GitHub Container Registry password from stdin stream. This can be a password or PAT, though a PAT is recommended.
+     
+    Namespacing Args     
+        -dl | --dockerhub-library                 - The library segment of the DockerHub images namespace.
+        -dr | --dockerhub-repository              - The repository segment of the DockerHub images namespace.
+        -gl | --ghcr-library                      - The library segment of the GitHub images namespace.
+        -gr | --ghcr-repository                   - The repository segment of the GitHub images namespace.
+     
+    OpenContainer Args     
+        --oci | --oci-label                       - Label(s) as described by the OCI in the format of "key=value". Note: Version is automatically added based on the image-version argument.
+                                                    If a remote origin can be found and is not explicitly specified, it will be added.
+                                                      --opencontainers-label "created=01/01/2021"
+                                                      --opencontainers-label "source=https://github.com/user/repository"
+     
+    Build Args     
+        --variant [ latest | 3.14 | 3.13 ]        - Semantic version compliant string that coincides with underlying base Alpine image. See dockerhub.com/alpine for values. 'latest' is considered valid.
+        -t | --target-stage [ tftpd | tftpd-pxe ] - Stage to target build. Standard TFTP server or TFTP with PXE boot support.
+        --latest                                  - Include additional "latest" tag
 
     Passthru Build Options
         Any arguments supplied following "--" are given to BuildKit as is.
@@ -289,9 +303,26 @@ __docker_build_parse_args() {
                 esac
                 shift 2;;
 
-            -a | --alpine-version)
-                alpine_version="$2";
+            --variant)
+                if [ "$2" != "latest" ] && [ "$2" != "3.14" ] && [ "$2" != "3.13" ]; then
+                    echo "Invalid alpine version argument supplied." >&2
+                    show_usage;
+                    exit 1;
+                fi
+
+                variant="$2";
                 shift 2;;
+
+
+            -t  | --target-phase)
+                if [ "$2" != "tftpd" ] && [ "$2" != "tftpd-pxe" ]; then
+                    echo "Invalid target phase argument supplied." >&2
+                    show_usage;
+                    exit 1;
+                fi
+
+                target_phase="$2";
+                shift;;
 
             -dL | --dockerhub-login-endpoint)
                 dockerhub_login_endpoint="$2";
