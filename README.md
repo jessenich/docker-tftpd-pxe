@@ -1,4 +1,12 @@
-![Release Status](https://github.com/jessenich/docker-alpine-tftpd-pxe/actions/workflows/docker-build-release.yml/badge.svg)
+# Alpine Based TFTPD Server with PXE & uboot support.
+
+[![GitHub last commit](https://img.shields.io/github/last-commit/jessenich/docker-alpine-tftpd-pxe?style=for-the-badge)](https://github.com/jessenich/docker-alpine-tftpd-pxe) [![GitHub](https://img.shields.io/github/license/jessenich/docker-alpine-tftpd-pxe?style=for-the-badge)](https://github.com/jessenich/docker-alpine-tftpd-pxe/blob/master/LICENSE)
+
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jessenich/docker-alpine-tftpd-pxe/Push%20Docker%20Image?label=Build%20%26%20Push%20Docker%20Image&style=for-the-badge)
+
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/jessenich91/tftpd?style=for-the-badge)](https://dockerhub.com/r/jessenich91/tftpd) [![Docker Image Size (tag)](https://img.shields.io/docker/image-size/jessenich91/tftpd/latest?style=for-the-badge)](https://dockerhub.com/r/jessenich91/tftpd) [![Docker Pulls](https://img.shields.io/docker/pulls/jessenich91/tftpd?label=DOCKERHUB%20PULLS&style=for-the-badge)](https://dockerhub.com/r/jessenich91/tftpd)
+
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/jessenich/docker-alpine-tftpd-pxe)
 
 # What is this container for?
 
@@ -15,7 +23,7 @@ and configuration for PXE booting. PXE variant also compatible with U-Boot and R
 **Simply put, this container has been written with simplicity and security in mind.**
 
 Many community containers run unnecessarily with root privileges by default and don't provide help for dropping unneeded CAPabilities either.
-Additionally, overly complex shell scripts and unofficial base images make it harder to verify the source and keep images up-to-date.  
+Additionally, overly complex shell scripts and unofficial base images make it harder to verify the source and keep images up-to-date.
 
 To remedy the situation, these images have been written with security, simplicity and overall quality in mind.
 
@@ -44,8 +52,8 @@ See the `Tags` tab on Docker Hub for specifics. Basically you have:
 
 ### PXE Configuration
 
-The user should populate `/tftpboot/boot` with bootable images and usually replace the `/tftpboot/pxelinux.cfg` directory with one having the appropriate configuration.  
-See `docker-compose.yml` in the source repository for an example.  
+The user should populate `/tftpboot/boot` with bootable images and usually replace the `/tftpboot/pxelinux.cfg` directory with one having the appropriate configuration.
+See `docker-compose.yml` in the source repository for an example.
 
 Here's an overview of the directory structure with an example boot image for LibreELEC and another for Raspbian (Raspberry Pi).
 
@@ -56,10 +64,10 @@ Here's an overview of the directory structure with an example boot image for Lib
  ├── boot                   <- Place your boot files here.
  │   ├── libreelec
  │   │   └── KERNEL
- │   └── root               <- Special directory (optional). Contents are copied to TFTP root (to /tftpboot). Useful with Raspberry Pi since it expects a certain structure. 
+ │   └── root               <- Special directory (optional). Contents are copied to TFTP root (to /tftpboot). Useful with Raspberry Pi since it expects a certain structure.
  │       ├── bootcode.bin   <- This file is always required to be on the root level with RPi. Rest of the boot files can be placed in subdirs but it's not mandatory.
  │       └── abcd1234       <- All boot files can also be placed directly under `root` if desired. See: https://www.raspberrypi.org/documentation/hardware/raspberrypi/bootmodes/net.md
- │           ├── start.elf     
+ │           ├── start.elf
  │           └── ...
  │
  └── syslinux               <- Contains prepopulated files and configuration necessary for booting with Syslinux. No need to touch this.
@@ -67,11 +75,11 @@ Here's an overview of the directory structure with an example boot image for Lib
      ├── efi64
      │   └── syslinux.efi   <- The UEFI bootloader (64-bit) (Note: UEFI + Syslinux may have more issues like slow transfer speeds). Clients should be pointed to "syslinux/efi64/syslinux.efi".
      ├── boot -> ../boot
-     ├── pxelinux.cfg -> ../pxelinux.cfg   
+     ├── pxelinux.cfg -> ../pxelinux.cfg
      └── ...
- 
+
 ```
-  
+
 Example contents for custom `pxelinux.cfg/default`:
 
 ```text
@@ -93,8 +101,8 @@ LABEL local
 
 ### License
 
-Copyright (c) 2021 Jesse N, jesse@keplerdev.com. See [LICENSE](https://github.com/jessenich/docker-tftpd-pxe/blob/master/LICENSE) for license information.  
+Copyright (c) 2021 Jesse N, jesse@keplerdev.com. See [LICENSE](https://github.com/jessenich/docker-tftpd-pxe/blob/master/LICENSE) for license information.
 
-As with all Docker images, the built image likely also contains other software which may be under other licenses (such as software from the base distribution, along with any direct or indirect dependencies of the primary software being contained).  
-  
+As with all Docker images, the built image likely also contains other software which may be under other licenses (such as software from the base distribution, along with any direct or indirect dependencies of the primary software being contained).
+
 As for any pre-built image usage, it is the image user's responsibility to ensure that any use of this image complies with any relevant licenses for all software contained within.
