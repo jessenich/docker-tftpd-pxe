@@ -74,7 +74,7 @@ __docker_build_grep_semver() {
 
     echo -n -e "${value}\c" | \
         sed 's/v//' | \
-        grep -Eio "${semver_2_segment}"
+            grep -Eio "${semver_2_segment}"
 }
 
 __docker_build_derive_oci() {
@@ -83,7 +83,7 @@ __docker_build_derive_oci() {
     # org.opencontainers.image.url - URL to find more information on the image (string).
     # org.opencontainers.image.documentation - URL to get documentation on the image (string).
     # org.opencontainers.image.source - URL to get source code for building the image (string).
-    
+
     # The version MAY match a label or tag in the source code repository.
     # Version MAY be Semantic versioning-compatible.
     # org.opencontainers.image.version - Version of the packaged software.
@@ -99,7 +99,7 @@ __docker_build_derive_oci() {
     local author="Jesse N. <jesse@keplerdev.com>"
     repo_url="$(git remote get-url --push origin)"
     run_date=$(date "+%Y-%m-%d")
-    
+
     oci=(
         "${oci_created:-"org.opencontainers.image.created=$run_date"}"
         "${oci_authors:-"org.opencontainers.image.authors=$author"}"
@@ -241,36 +241,36 @@ Usage: $0 [Script Options] [Builder Options] [[DockerHub Login Options] &|[GitHu
                                                        "default": Use latest git tag if image version not already specified. This is the default value.
                                                        "git-tag": Ignore specified image version argument and use latest git tag
                                                        "explicit": Use only the value passed with -i | --image-version. Errors if no value is supplied.
-     
-    Builder Options     
+
+    Builder Options
         -b | --builder-image [ IMAGE ]            - Name, and tag if not latest, to use with BuildKit
         -P | --platforms [ PLATFORM STRING ]      - Platform string to pass to buildkit. Defaults to 'linux/amd64,linux/arm64/v8,linux/arm/v7'
-     
-    DockerHub Login Options     
+
+    DockerHub Login Options
         -dL | --dockerhub-login-endpoint          - Defaults to null, or docker.io. Only specify in special circumstances.
         -du | --dockerhub-username                - Username to login to the DockerHub Container Registry. This is not part of the image namespace even though both values may be the same.
         -dp | --dockerhub-password                - Password to login to the GitHub Container Registry. This can be a password or PAT, though a PAT is recommended.
         --dockerhub-password-stdin                - Read DockerHub registry password from stdin stream. This can be a password or PAT, though a PAT is recommended.
-     
-    GitHub Login Options     
+
+    GitHub Login Options
         -gL | --ghcr-login-endpoint               - Relative endpoint URI to post login credentials to. This is only required for GitHub Enterprise registries.
         -gu | --ghcr-username                     - Username to login to the GitHub Container Registry.
         -gp | --ghcr-password                     - Password to login to the GitHub Container Registry. This can be a password or PAT, though a PAT is recommended.
         --ghcr-password-stdin                     - Read GitHub Container Registry password from stdin stream. This can be a password or PAT, though a PAT is recommended.
-     
-    Namespacing Args     
+
+    Namespacing Args
         -dl | --dockerhub-library                 - The library segment of the DockerHub images namespace.
         -dr | --dockerhub-repository              - The repository segment of the DockerHub images namespace.
         -gl | --ghcr-library                      - The library segment of the GitHub images namespace.
         -gr | --ghcr-repository                   - The repository segment of the GitHub images namespace.
-     
-    OpenContainer Args     
+
+    OpenContainer Args
         --oci | --oci-label                       - Label(s) as described by the OCI in the format of "key=value". Note: Version is automatically added based on the image-version argument.
                                                     If a remote origin can be found and is not explicitly specified, it will be added.
                                                       --opencontainers-label "created=01/01/2021"
                                                       --opencontainers-label "source=https://github.com/user/repository"
-     
-    Build Args     
+
+    Build Args
         --variant [ latest | 3.14 | 3.13 ]        - Semantic version compliant string that coincides with underlying base Alpine image. See dockerhub.com/alpine for values. 'latest' is considered valid.
         -t | --target-stage [ tftpd | tftpd-pxe ] - Stage to target build. Standard TFTP server or TFTP with PXE boot support.
         --latest                                  - Include additional "latest" tag

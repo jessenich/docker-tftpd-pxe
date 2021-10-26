@@ -2,7 +2,8 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: tftpd
+    maintainer: Jesse N. <jesse@keplerdev.com>
+    org.opencontainers.image.source: https://github.com/jessenich/docker-tftpd-pxe
   name: tftpd
 spec:
   replicas: 1
@@ -15,8 +16,8 @@ spec:
     spec:
       restartPolicy: Always
       containers:
-        - image: kalaksi/tftpd
-          name: tftpd
+        - image: jessenich91/tftpd-pxe:latest
+          name: tftpd-pxe
           ports:
             - containerPort: 1069
               hostPort: 69
@@ -33,10 +34,13 @@ spec:
               drop:
                 - ALL
           volumeMounts:
-              name: tftpd-boot
-            - mountPath: /tftpboot/pxelinux.cfg
-              name: tftpd-configuration
+            - name: tftpd-boot
+              mountPath: /tftp/boot/pxelinux.cfg
+
+            - name: tftpd-configuration
+              mountPath: tftpd-configuration
               readOnly: true
+
 
       volumes:
         - name: tftpd-boot
