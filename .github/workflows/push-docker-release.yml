@@ -76,7 +76,7 @@ jobs:
           password: ${{ secrets.AZCR_TOKEN }}
 
       - name: Build & Push Dev Latest
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: ./Dockerfile
@@ -97,7 +97,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.semver.outputs.non-prefixed }}
 
       - name: Build & Push Primary Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: ./Dockerfile
