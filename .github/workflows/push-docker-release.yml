@@ -45,7 +45,7 @@ jobs:
           docker buildx create --platform "${{ env.TARGET_PLATFORMS }}
 
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.11
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
